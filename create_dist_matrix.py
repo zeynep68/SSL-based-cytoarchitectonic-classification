@@ -40,29 +40,20 @@ def init_solver(vertices, faces):
 
 
 @profile
-def write_dist_matrix_to_hdf5(h5_file):
-    # initialization
-    start_idx = 0
-    end_idx = 30_000  # 342_042
-    steps = 5_000
-
+def write_dist_matrix_to_hdf5(h5_file, end_idx=342_042, steps=5_000):  # end_idx = 342_042
     start = time.time()
-    while start_idx < end_idx:
-        start1 = time.time()
-        if (end_idx - start_idx) < steps:
-            steps = end_idx - start_idx
+    for offset in range(0, end_idx, steps):
+        dist_rows = compute_multiple_dist_matrix_rows(offset, steps)
+        write_rows_to_dist_matrix_in_hdf5(h5_file, np.array(dist_rows), offset)
 
-        dist_rows = compute_multiple_dist_matrix_rows(start_idx, steps)
-        write_rows_to_dist_matrix_in_hdf5(h5_file, np.array(dist_rows), start_idx)
-
-        start_idx += steps
-        diff1 = time.time() - start1
-        print('------' + str(diff1) + '----------')
+        if (end_idx - offset) < steps:  # last iteration
+            steps = end_idx - offset
 
     diff = time.time() - start
-    print('-' * 60)
-    print(Colors.OKBLUE + f'{diff} secs = {diff / 60} mins' + Colors.ENDC)  # for readability
-    print('-' * 60)
+    # for readability
+    print(Colors.OKBLUE + '-' * 60)
+    print(f'{diff} secs = {diff / 60} mins')
+    print('-' * 60 + Colors.ENDC)
 
 
 def compute_multiple_dist_matrix_rows(start_idx, num_coordinates):
@@ -89,9 +80,13 @@ def hdf5_file_exists(path):
 
 
 def write_rows_to_dist_matrix_in_hdf5(h5_file, rows, start_idx):
+    """
+    Create a distance matrix in the hdf5 file.
+    Row X corresponds to the data point index X in the coordinates array.
+    Row X gives the distances from data point X to all other data points.
+    Columns correspond to the data point indices according to the coordinates array.
+    """
     if start_idx == 0:
-        # row X corresponds to the data point index X in the coordinates array
-        # column Y corresponds to the distance from data point X to data point Y in the coordinates array
         h5_file.create_dataset('dist_matrix', data=rows, chunks=True,
                                maxshape=(None, rows.shape[1]))
     else:
@@ -116,7 +111,7 @@ def main(dist_matrix=False, coordinates=True, kd_tree=False):
     if dist_matrix:
         vertices, faces = get_space()
         solver = init_solver(vertices=vertices, faces=faces)
-        write_dist_matrix_to_hdf5(h5_file=h5_file)
+        write_dist_matrix_to_hdf5(h5_file=h5_file, end_idx=342_042, steps=5_000)
 
     if kd_tree:
         pass
