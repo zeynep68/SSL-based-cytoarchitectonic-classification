@@ -40,14 +40,14 @@ def init_solver(vertices, faces):
 
 
 @profile
-def write_dist_matrix_to_hdf5(h5_file, end_idx=342_042, steps=5_000):  # end_idx = 342_042
+def write_dist_matrix_to_hdf5(h5_file, start_idx=0, end_idx=342_042, steps=5_000):
     start = time.time()
-    for offset in range(0, end_idx, steps):
-        dist_rows = compute_multiple_dist_matrix_rows(offset, steps)
-        write_rows_to_dist_matrix_in_hdf5(h5_file, np.array(dist_rows), offset)
-
+    for offset in range(start_idx, end_idx, steps):
         if (end_idx - offset) < steps:  # last iteration
             steps = end_idx - offset
+
+        dist_rows = compute_multiple_dist_matrix_rows(offset, steps)
+        write_rows_to_dist_matrix_in_hdf5(h5_file, np.array(dist_rows), offset)
 
     diff = time.time() - start
     # for readability
@@ -61,8 +61,8 @@ def compute_multiple_dist_matrix_rows(start_idx, num_coordinates):
         and save it as a row in the numpy array. """
     with multiprocessing.Pool(multiprocessing.cpu_count()) as pool:
         iter_steps = list(range(start_idx, start_idx + num_coordinates))  # results are in correct order
-
         results = pool.map(compute_geodesic_distance, iter_steps)
+
     return np.array(results)
 
 
@@ -86,7 +86,7 @@ def write_rows_to_dist_matrix_in_hdf5(h5_file, rows, start_idx):
     Row X gives the distances from data point X to all other data points.
     Columns correspond to the data point indices according to the coordinates array.
     """
-    if start_idx == 0:
+    if start_idx == 341_800:
         h5_file.create_dataset('dist_matrix', data=rows, chunks=True,
                                maxshape=(None, rows.shape[1]))
     else:
@@ -111,7 +111,7 @@ def main(dist_matrix=False, coordinates=True, kd_tree=False):
     if dist_matrix:
         vertices, faces = get_space()
         solver = init_solver(vertices=vertices, faces=faces)
-        write_dist_matrix_to_hdf5(h5_file=h5_file, end_idx=342_042, steps=5_000)
+        write_dist_matrix_to_hdf5(h5_file=h5_file, start_idx=341_800, end_idx=342_042, steps=100)
 
     if kd_tree:
         pass
