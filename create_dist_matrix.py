@@ -1,5 +1,7 @@
+import base64
 import multiprocessing
 import os
+import pickle
 import time
 
 import h5py
@@ -8,6 +10,7 @@ import potpourri3d as pp3d
 import pygeodesic.geodesic as geodesic
 import siibra
 from memory_profiler import profile
+from scipy.spatial import KDTree
 
 
 class Colors:
@@ -95,6 +98,14 @@ def write_rows_to_dist_matrix_in_hdf5(h5_file, rows, start_idx):
         dataset[-len(rows):] = rows
 
 
+def write_kd_tree_to_hdf5(h5_file, coordinates):
+    kdtree = KDTree(coordinates)
+    pickled_kdtree = pickle.dumps(kdtree)
+    # to avoid ValueError: VLEN strings do not support embedded NULLs
+    encoded_data = base64.b64encode(pickled_kdtree)
+    h5_file.create_dataset('kd_tree', data=encoded_data)
+
+
 def main(dist_matrix=False, coordinates=True, kd_tree=False):
     global solver  # to make it work with multiprocessing
     global MODE  # to make it work with multiprocessing
@@ -114,10 +125,11 @@ def main(dist_matrix=False, coordinates=True, kd_tree=False):
         write_dist_matrix_to_hdf5(h5_file=h5_file, start_idx=341_800, end_idx=342_042, steps=100)
 
     if kd_tree:
-        pass
+        vertices, _ = get_space()
+        write_kd_tree_to_hdf5(h5_file=h5_file, coordinates=vertices)
 
     h5_file.close()
 
 
 if __name__ == "__main__":
-    main(dist_matrix=True, coordinates=False, kd_tree=False)
+    main(dist_matrix=False, coordinates=False, kd_tree=True)
