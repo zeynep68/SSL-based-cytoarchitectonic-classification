@@ -1,4 +1,5 @@
 # pip3 install vtk
+import h5py
 import meshio
 import pymeshlab as pm
 import siibra
@@ -10,7 +11,7 @@ def get_space(name='colin27', format='neuroglancer/precompmesh/surface'):
     return space['verts'], space['faces']
 
 
-def reduce_mesh(vertices, faces, scale=10):
+def reduce_mesh(vertices, faces, scale=10, save_mesh=True, save_path='reduced_mesh.h5'):
     """
         target_length: Sets the target length for the remeshed mesh edges.
     """
@@ -27,9 +28,14 @@ def reduce_mesh(vertices, faces, scale=10):
     print(output_mesh.vertex_matrix().shape)
     print(output_mesh.face_matrix().shape)
 
-    meshio.write_mesh(fname="mesh_reduced.ply",
-                      vertices=output_mesh.vertex_matrix(),
-                      faces=output_mesh.face_matrix())
+    if save_mesh:
+        meshio.write_mesh(fname="mesh_reduced.ply",
+                          vertices=output_mesh.vertex_matrix(),
+                          faces=output_mesh.face_matrix())
+    if save_path is not None:
+        h5_file = h5py.File(save_path, 'w')
+        h5_file.create_dataset('vertices', data=output_mesh.vertex_matrix())
+        h5_file.create_dataset('faces', data=output_mesh.face_matrix())
 
 
 if __name__ == '__main__':
