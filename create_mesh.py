@@ -32,7 +32,7 @@ def reduce_mesh(vertices, faces, scale=10):
                       faces=output_mesh.face_matrix())
 
 
-if name == '__main__':
+if __name__ == '__main__':
     vertices, faces = get_space()
     # write_mesh(fname="mesh.ply", vertices=vertices, faces=faces)
     reduce_mesh(vertices, faces)
